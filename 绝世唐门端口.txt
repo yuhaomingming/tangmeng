@@ -1,0 +1,8 @@
+//
+AuthServer
+Public_Port=11610
+Private_Prot=14001
+GameServer
+Public_Port=11611
+AuthServer_Port=14001
+
