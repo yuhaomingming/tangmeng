@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -169,6 +170,7 @@ public class UPkLogic implements Serializable{
 		}
 		Map.put("AM", encardmember.toArray());
 	}
+
 	//开始互攻
 	public int StartBattle(ArrayList<UserCard> ul,ArrayList<UserCard> enul,Map<String,Object> mapgame){
 		int sumflag=0;
@@ -188,7 +190,8 @@ public class UPkLogic implements Serializable{
 		
 		System.out.println("HA="+curpoint[0]);
 		System.out.println("HB="+curpoint[1]);
-		
+		int totalha=curpoint[0];
+		int totalhb=curpoint[1];
 		
 		for(int k=0;k<20;k++){//最多20回合		
 			//logger.info("回合数：##########################################"+k);
@@ -204,6 +207,24 @@ public class UPkLogic implements Serializable{
 						checkflagp=PlayerRun(ul,enul,i,newmap,"N");
 						//logger.info("玩家攻::::::::::::"+i+"+++攻击结果值："+checkflagp);
 						misslist.add(newmap);
+						
+						
+						Object [] mmap=(Object[])(newmap.get("CH"));
+						for(int j=0;j<mmap.length;j++){
+							totalhb-=Integer.parseInt(((Map)mmap[j]).get("KRH").toString());
+							((Map)mmap[j]).put("KJ", totalhb+"");
+							
+							
+							System.out.println("totalhb");
+							Set<String> key = ((Map)mmap[j]).keySet();
+							for (Iterator<String> it = key.iterator(); it.hasNext();) {
+								String s = it.next();
+								System.out.print(s+":"+((Map)mmap[j]).get(s)+",");//这里的s就是map中的key，map.get(s)就是key对应的value。
+							}
+							System.out.println("");
+						}
+						System.out.println("");
+						
 					}	
 				}
 				if(checkflagp<1){//玩家胜
@@ -222,6 +243,21 @@ public class UPkLogic implements Serializable{
 						checkflagn=PlayerRun(enul,ul,i,newmap,"P");
 						//logger.info("好友攻::::::::::::"+i+"+++攻击结果值："+checkflagn);
 						misslist.add(newmap);
+						
+						Object [] mmap=(Object[])(newmap.get("CH"));
+						for(int j=0;j<mmap.length;j++){
+							totalha-=Integer.parseInt(((Map)mmap[j]).get("KRH").toString());
+							((Map)mmap[j]).put("KJ", totalha+"");
+							Set<String> key = ((Map)mmap[j]).keySet();
+							
+							System.out.println("totalha");
+							for (Iterator<String> it = key.iterator(); it.hasNext();) {
+								String s = it.next();
+								System.out.print(s+":"+((Map)mmap[j]).get(s)+",");//这里的s就是map中的key，map.get(s)就是key对应的value。
+							}
+							System.out.println("");
+						}
+						System.out.println("");
 					}						
 				}				
 				if(checkflagn<1){//对方胜
@@ -315,10 +351,12 @@ public class UPkLogic implements Serializable{
 					hurt=(int)(hurt*1.05);
 				}
 				if(encard.getCurhp()-hurt<0) {
+					mmm.put("KRH", encard.getCurhp());
 					encard.setCurhp(0);
 					mmm.put("KE", 0);
 				}
 				else{
+					mmm.put("KRH", hurt);
 					encard.setCurhp(encard.getCurhp()-hurt);
 					mmm.put("KE", encard.getCurhp());
 				}
@@ -336,13 +374,6 @@ public class UPkLogic implements Serializable{
 			}
 			tmap.put("CH", mlist.toArray());
 		}
-		
-		int totalhp=Integer.parseInt(tmap.get("HA").toString());
-		for(int i=0;i<mlist.size();i++){
-			Map hpmap=mlist.get(i);
-			totalhp-=Integer.parseInt(tmap.get("KD").toString());
-		}
-		tmap.put("KJ", totalhp+"");
 		return actflag;
 		
 	}
@@ -362,11 +393,16 @@ public class UPkLogic implements Serializable{
 				if(CheckControl(ucb.getCardprop(),encard.getCardprop())>0){//本位有克制，伤害增加0.05倍
 					hurt=(int)(hurt*1.05);
 				}
-				encard.setCurhp(encard.getCurhp()-hurt);
-				if(encard.getCurhp()<=0) {
+				
+				if(encard.getCurhp()-hurt<=0) {
+					mmm.put("KRH", encard.getCurhp());
 					encard.setCurhp(0);
 					mmm.put("KE", 0);
-				}else mmm.put("KE", encard.getCurhp());
+				}else {
+					mmm.put("KRH", hurt);
+					encard.setCurhp(encard.getCurhp()-hurt);
+					mmm.put("KE", encard.getCurhp());
+				}
 				mmm.put("KA", targ);
 				mmm.put("KB", encard.getCardid());
 				mmm.put("KC", encard.getLocate());
@@ -397,11 +433,16 @@ public class UPkLogic implements Serializable{
 			if(CheckControl(ul.get(locflag).getCardprop(),encard.getCardprop())>0){//本位有克制，伤害增加0.05倍
 				hurt=(int)(hurt*1.05);
 			}
-			encard.setCurhp(encard.getCurhp()-hurt);
-			if(encard.getCurhp()<=0) {
+			
+			if(encard.getCurhp()-hurt<=0) {
+				 tm.put("KRH",encard.getCurhp());
 				encard.setCurhp(0);
 				tm.put("KE", 0);
-			}else tm.put("KE",encard.getCurhp());
+			}else{
+				tm.put("KRH",hurt);
+				encard.setCurhp(encard.getCurhp()-hurt);
+				tm.put("KE",encard.getCurhp());
+			}
 			tm.put("KA", targ);
 			tm.put("KB", encard.getCardid());
 			tm.put("KC", encard.getLocate());
@@ -431,11 +472,16 @@ public class UPkLogic implements Serializable{
 					if(CheckControl(ucb.getCardprop(),encard.getCardprop())>0){//本位有克制，伤害增加0.05倍
 						hurt=(int)(hurt*1.05);
 					}
-					encard.setCurhp(encard.getCurhp()-hurt);
-					if(encard.getCurhp()<=0) {
+					
+					if(encard.getCurhp()-hurt<=0) {
+						tm1.put("KRH", encard.getCurhp());
 						encard.setCurhp(0);
 						tm1.put("KE", 0);
-					}else tm1.put("KE", encard.getCurhp());
+					}else{
+						tm1.put("KRH", hurt);
+						encard.setCurhp(encard.getCurhp()-hurt);
+						tm1.put("KE", encard.getCurhp());
+					} 
 					tm1.put("KA", targ);
 					tm1.put("KB", encard.getCardid());
 					tm1.put("KC", encard.getLocate());
@@ -468,11 +514,16 @@ public class UPkLogic implements Serializable{
 					if(CheckControl(ucb.getCardprop(),encard.getCardprop())>0){//本位有克制，伤害增加0.05倍
 						hurt=(int)(hurt*1.05);
 					}
-					encard.setCurhp(encard.getCurhp()-hurt);
-					if(encard.getCurhp()<=0) {
+					
+					if(encard.getCurhp()-hurt<=0) {
+						 tm1.put("KRH", encard.getCurhp());
 						encard.setCurhp(0);
 						tm1.put("KE", 0);
-					}else tm1.put("KE", encard.getCurhp());
+					}else{
+						tm1.put("KRH", hurt);
+						encard.setCurhp(encard.getCurhp()-hurt);
+						tm1.put("KE", encard.getCurhp());
+					}
 					tm1.put("KA", targ);
 					tm1.put("KB", encard.getCardid());
 					tm1.put("KC", encard.getLocate());
@@ -510,11 +561,16 @@ public class UPkLogic implements Serializable{
 						if(CheckControl(ucb.getCardprop(),encard.getCardprop())>0){//本位有克制，伤害增加0.05倍
 							hurt=(int)(hurt*1.05);
 						}
-						enul.get(curloc).setCurhp(encard.getCurhp()-hurt);
-						if(encard.getCurhp()<=0) {
+						
+						if(encard.getCurhp()-hurt<=0) {
+							tm2.put("KRH", encard.getCurhp());
 							encard.setCurhp(0);
 							tm2.put("KE", 0);
-						}else tm2.put("KE", encard.getCurhp());
+						}else{
+							tm2.put("KRH", hurt);
+							encard.setCurhp(encard.getCurhp()-hurt);
+							tm2.put("KE", encard.getCurhp());
+						} 
 						tm2.put("KA", targ);
 						tm2.put("KB", encard.getCardid());
 						tm2.put("KC", encard.getLocate());

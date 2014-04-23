@@ -10,9 +10,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
+
 import com.gameserver.comm.CommTools;
 import com.gameserver.dao.GameServerDao;
 import com.gameserver.manager.GameManager;
@@ -300,78 +302,111 @@ public class MissionLogic implements Serializable{
 		}		
 	}
 	//开始互攻
-	public int StartBattle(ArrayList<UserCard> ul,ArrayList<CMissionNpcDict> al,Map<String,Object> mapgame){
-		int sumflag=0;
-		int checkflagp=1,checkflagn=1;
-		int winloseflag=-1;
-		ArrayList<Map<String,Object>> misslist=new ArrayList<Map<String,Object>>();
-		//logger.info("开始战斗**********************************************");
-		
-		int[] curpoint={0,0};//玩家总血，对方总血
-		for(int i=0;i<ul.size();i++){
-			curpoint[0]=curpoint[0]+ul.get(i).getCurhp();		
-		}
-		for(int i=0;i<al.size();i++){
-			curpoint[1]=curpoint[1]+al.get(i).getCurhp();		
-		}	
-		mapgame.put("HA", curpoint[0]);//玩家总血
-		mapgame.put("HB", curpoint[1]);//对方总血
-		
-		System.out.println("HA="+curpoint[0]);
-		System.out.println("HB="+curpoint[1]);
-		
-		
-		for(int k=0;k<20;k++){//最多20回合	
+		public int StartBattle(ArrayList<UserCard> ul,ArrayList<CMissionNpcDict> al,Map<String,Object> mapgame){
+			int sumflag=0;
+			int checkflagp=1,checkflagn=1;
+			int winloseflag=-1;
+			ArrayList<Map<String,Object>> misslist=new ArrayList<Map<String,Object>>();
+			//logger.info("开始战斗**********************************************");
 			
-			for(int i=0;i<6;i++){
-				if(i<ul.size()){//玩家攻
-					if(ul.get(i).getCurhp()>0){
-						Map<String,Object> newmap = new HashMap<String,Object>();
-						sumflag=sumflag+1;
-						newmap.put("CA", sumflag);
-						newmap.put("CB", "P");
-						newmap.put("CC", ul.get(i).getCardid());
-						newmap.put("CD", i);
-						checkflagp=PlayerRun(ul,al,i,newmap);
-						//logger.info("玩家攻::::::::::::"+i+"+++攻击结果值："+checkflagp);
-						//logger.info("往来数：##########################################"+sumflag);
-						misslist.add(newmap);
-					}	
-				}
-				if(checkflagp<1){//玩家胜
-					winloseflag=1;
-					//logger.info("玩家胜");
-					break;
-				}
-				if(i<al.size()){//npc攻
-					if(al.get(i).getCurhp()>0){
-						Map<String,Object> newmap = new HashMap<String,Object>();
-						sumflag=sumflag+1;
-						newmap.put("CA", sumflag);
-						newmap.put("CB", "N");
-						newmap.put("CC", al.get(i).getNpcid());
-						newmap.put("CD", i);
-						checkflagn=NpcAction(ul,al,i,newmap);
-						//logger.info("NPC攻:::::::::::::::"+i+"+++攻击结果值："+checkflagn);
-						//logger.info("往来数：##########################################"+sumflag);
-						misslist.add(newmap);
-					}						
-				}				
-				if(checkflagn<1){//NPC胜
-					winloseflag=0;
-					//logger.info("玩家败");
-					break;
-				}
+			int[] curpoint={0,0};//玩家总血，对方总血
+			for(int i=0;i<ul.size();i++){
+				curpoint[0]=curpoint[0]+ul.get(i).getCurhp();		
 			}
-			if(winloseflag>=0){
-				break;
-			}else if(k==19){
-				winloseflag=0;
-			}			
+			for(int i=0;i<al.size();i++){
+				curpoint[1]=curpoint[1]+al.get(i).getCurhp();		
+			}	
+			mapgame.put("HA", curpoint[0]);//玩家总血
+			mapgame.put("HB", curpoint[1]);//对方总血
+			
+			System.out.println("HA="+curpoint[0]);
+			System.out.println("HB="+curpoint[1]);
+			
+			int totalha=curpoint[0];
+			int totalhb=curpoint[1];
+			for(int k=0;k<20;k++){//最多20回合	
+				
+				for(int i=0;i<6;i++){
+					if(i<ul.size()){//玩家攻
+						if(ul.get(i).getCurhp()>0){
+							Map<String,Object> newmap = new HashMap<String,Object>();
+							sumflag=sumflag+1;
+							newmap.put("CA", sumflag);
+							newmap.put("CB", "P");
+							newmap.put("CC", ul.get(i).getCardid());
+							newmap.put("CD", i);
+							checkflagp=PlayerRun(ul,al,i,newmap);
+							//logger.info("玩家攻::::::::::::"+i+"+++攻击结果值："+checkflagp);
+							//logger.info("往来数：##########################################"+sumflag);
+							misslist.add(newmap);
+							
+							
+							Object [] mmap=(Object[])(newmap.get("CH"));
+							for(int j=0;j<mmap.length;j++){
+								totalhb-=Integer.parseInt(((Map)mmap[j]).get("KRH").toString());
+								((Map)mmap[j]).put("KJ", totalhb+"");
+								
+								System.out.println("totalhb");
+								Set<String> key = ((Map)mmap[j]).keySet();
+								for (Iterator<String> it = key.iterator(); it.hasNext();) {
+									String s = it.next();
+									System.out.print(s+":"+((Map)mmap[j]).get(s)+",");//这里的s就是map中的key，map.get(s)就是key对应的value。
+								}
+								System.out.println("");
+							}
+							System.out.println("");
+						}	
+					}
+					if(checkflagp<1){//玩家胜
+						winloseflag=1;
+						//logger.info("玩家胜");
+						break;
+					}
+					if(i<al.size()){//npc攻
+						if(al.get(i).getCurhp()>0){
+							Map<String,Object> newmap = new HashMap<String,Object>();
+							sumflag=sumflag+1;
+							newmap.put("CA", sumflag);
+							newmap.put("CB", "N");
+							newmap.put("CC", al.get(i).getNpcid());
+							newmap.put("CD", i);
+							checkflagn=NpcAction(ul,al,i,newmap);
+							//logger.info("NPC攻:::::::::::::::"+i+"+++攻击结果值："+checkflagn);
+							//logger.info("往来数：##########################################"+sumflag);
+							misslist.add(newmap);
+							
+							Object [] mmap=(Object[])(newmap.get("CH"));
+							for(int j=0;j<mmap.length;j++){
+								totalha-=Integer.parseInt(((Map)mmap[j]).get("KRH").toString());
+								((Map)mmap[j]).put("KJ", totalha+"");
+								
+								System.out.println("totalha");
+								Set<String> key = ((Map)mmap[j]).keySet();
+								for (Iterator<String> it = key.iterator(); it.hasNext();) {
+									String s = it.next();
+									System.out.print(s+":"+((Map)mmap[j]).get(s)+",");//这里的s就是map中的key，map.get(s)就是key对应的value。
+								}
+								System.out.println("");
+							}
+							System.out.println("");
+						}						
+					}				
+					if(checkflagn<1){//NPC胜
+						winloseflag=0;
+						//logger.info("玩家败");
+						break;
+					}
+				}
+				if(winloseflag>=0){
+					break;
+				}else if(k==19){
+					winloseflag=0;
+				}			
+			}
+			mapgame.put("AN", misslist.toArray());
+			return winloseflag;
 		}
-		mapgame.put("AN", misslist.toArray());
-		return winloseflag;
-	}
+
 	//战斗结束，计算收益
 	public void FinishBattle(int wlflag,User p,UserMission um,Map<String,Object> smap,ArrayList<UserCard> ul,int mtype) throws SQLException{
 		//um.setMissnum(um.getMissnum()+1);//累计任务次数
@@ -601,10 +636,12 @@ public class MissionLogic implements Serializable{
 					hurt=(int)(hurt*1.05);
 				}
 				if(ucb.getCurhp()-hurt<=0) {
+					mmm.put("KRH", ucb.getCurhp());
 					ucb.setCurhp(0);
 					mmm.put("KE", 0);
 				}
 				else{
+					mmm.put("KRH", hurt);
 					ucb.setCurhp(ucb.getCurhp()-hurt);
 					mmm.put("KE", ucb.getCurhp());
 				}
@@ -622,12 +659,6 @@ public class MissionLogic implements Serializable{
 			}
 			tmap.put("CH", mlist.toArray());
 		}
-		int totalhp=Integer.parseInt(tmap.get("HA").toString());
-		for(int i=0;i<mlist.size();i++){
-			Map hpmap=mlist.get(i);
-			totalhp-=Integer.parseInt(tmap.get("KD").toString());
-		}
-		tmap.put("KJ", totalhp+"");
 		return actflag;
 	}
 	public void GetMemberMap(ArrayList<UserCard> ul,ArrayList<CMissionNpcDict> al,Map<String,Object> Map){
@@ -771,10 +802,12 @@ public class MissionLogic implements Serializable{
 					hurt=(int)(hurt*1.05);
 				}
 				if(npcl.getCurhp()-hurt<=0) {
+					mmm.put("KRH", npcl.getCurhp());
 					npcl.setCurhp(0);
 					mmm.put("KE", 0);
 				}
 				else{
+					mmm.put("KRH", hurt);
 					npcl.setCurhp(npcl.getCurhp()-hurt);
 					mmm.put("KE", npcl.getCurhp());
 				}
@@ -787,19 +820,12 @@ public class MissionLogic implements Serializable{
 				if(!npcl.getNpctype().equals("杂碎")) mmm.put("KH", GameManager.getInstance().getCarddict().get(npcl.getNpccode()).getStarlevel());
 				else mmm.put("KH", 1);
 				mmm.put("KI", 1);
-				
 				actflag=CheckNpcWinLose(al);
 				//logger.info("玩家正常攻击"+ucb.getCardid()+"--->"+npcl.getNpcname()+"npc剩余血量："+npcl.getCurhp()+"位置："+locate);
 				mlist.add(mmm);							
 			}
 			tmap.put("CH", mlist.toArray());
 		}
-		int totalhp=Integer.parseInt(tmap.get("HA").toString());
-		for(int i=0;i<mlist.size();i++){
-			Map hpmap=mlist.get(i);
-			totalhp-=Integer.parseInt(tmap.get("KD").toString());
-		}
-		tmap.put("KJ", totalhp+"");
 		//logger.info("受伤："+mlist.size());
 		return actflag;
 		
@@ -844,11 +870,16 @@ public class MissionLogic implements Serializable{
 				if(CheckControl(npcl.getNpcprop(),uc.getCardprop())>0){//本位有克制，伤害增加0.05倍
 					hurt=(int)(hurt*1.05);
 				}
-				uc.setCurhp(uc.getCurhp()-hurt);
-				if(uc.getCurhp()<=0) {
+				
+				if(uc.getCurhp()-hurt<=0) {
+					mmm.put("KRH",uc.getCurhp());
 					uc.setCurhp(0);
 					mmm.put("KE", 0);
-				}else mmm.put("KE", uc.getCurhp());
+				}else{
+					mmm.put("KRH",hurt);
+					uc.setCurhp(uc.getCurhp()-hurt);
+					mmm.put("KE", uc.getCurhp());
+				} 
 				mmm.put("KA", "P");
 				mmm.put("KB",uc.getCardid());
 				mmm.put("KC", uc.getLocate());
@@ -881,11 +912,16 @@ public class MissionLogic implements Serializable{
 				if(CheckControl(ucb.getCardprop(),npcl.getNpcprop())>0){//本位有克制，伤害增加0.05倍
 					hurt=(int)(hurt*1.05);
 				}
-				npcl.setCurhp(npcl.getCurhp()-hurt);
-				if(npcl.getCurhp()<=0) {
+				
+				if(npcl.getCurhp()-hurt<=0) {
+					mmm.put("KRH", npcl.getCurhp());
 					npcl.setCurhp(0);
 					mmm.put("KE", 0);
-				}else mmm.put("KE", npcl.getCurhp());
+				}else{
+					 mmm.put("KRH", hurt);
+					 npcl.setCurhp(npcl.getCurhp()-hurt);
+					 mmm.put("KE", npcl.getCurhp());	
+				}
 				mmm.put("KA", "N");
 				mmm.put("KB", npcl.getNpcid());
 				mmm.put("KC", npcl.getNpcloc());
@@ -920,11 +956,16 @@ public class MissionLogic implements Serializable{
 			if(CheckControl(npcl.getNpcprop(),uc.getCardprop())>0){//本位有克制，伤害增加0.05倍
 				hurt=(int)(hurt*1.05);
 			}
-			uc.setCurhp(uc.getCurhp()-hurt);
-			if(uc.getCurhp()<=0) {
+			
+			if(uc.getCurhp()-hurt<=0) {
+				tm.put("KRH", uc.getCurhp());
 				uc.setCurhp(0);
 				tm.put("KE", 0);
-			}else tm.put("KE", uc.getCurhp());
+			}else {
+				tm.put("KRH", hurt);
+				uc.setCurhp(uc.getCurhp()-hurt);
+				tm.put("KE", uc.getCurhp());
+			}
 			tm.put("KA", "P");
 			tm.put("KB", uc.getCardid());
 			tm.put("KC",uc.getLocate());
@@ -955,11 +996,16 @@ public class MissionLogic implements Serializable{
 			if(CheckControl(uc.getCardprop(),npcl.getNpcprop())>0){//本位有克制，伤害增加0.05倍
 				hurt=(int)(hurt*1.05);
 			}
-			npcl.setCurhp(npcl.getCurhp()-hurt);
-			if(npcl.getCurhp()<=0) {
+			
+			if(npcl.getCurhp()-hurt<=0) {
+				tm.put("KRH", npcl.getCurhp());
 				npcl.setCurhp(0);
 				tm.put("KE", 0);
-			}else tm.put("KE", npcl.getCurhp());
+			}else{
+				tm.put("KRH", hurt);
+				npcl.setCurhp(npcl.getCurhp()-hurt);
+				tm.put("KE", npcl.getCurhp());
+			} 
 			tm.put("KA", "N");
 			tm.put("KB", npcl.getNpcid());
 			tm.put("KC", npcl.getNpcloc());
@@ -996,11 +1042,16 @@ public class MissionLogic implements Serializable{
 						if(CheckControl(npcl.getNpcprop(),uc.getCardprop())>0){//本位有克制，伤害增加0.05倍
 							hurt=(int)(hurt*1.05);
 						}
-						uc.setCurhp(uc.getCurhp()-hurt);
-						if(uc.getCurhp()<=0) {
+						
+						if(uc.getCurhp()-hurt<=0) {
+							tm2.put("KRH", uc.getCurhp());
 							uc.setCurhp(0);
 							tm2.put("KE", 0);
-						}else tm2.put("KE", uc.getCurhp());
+						}else{
+							tm2.put("KRH", hurt);
+							uc.setCurhp(uc.getCurhp()-hurt);
+							tm2.put("KE", uc.getCurhp());
+						} 
 						tm2.put("KA", "P");
 						tm2.put("KB", uc.getCardid());
 						tm2.put("KC", uc.getLocate());
@@ -1051,11 +1102,16 @@ public class MissionLogic implements Serializable{
 						if(CheckControl(ucb.getCardprop(),npcl.getNpcprop())>0){//本位有克制，伤害增加0.05倍
 							hurt=(int)(hurt*1.05);
 						}
-						npcl.setCurhp(npcl.getCurhp()-hurt);
-						if(npcl.getCurhp()<=0) {
+						
+						if(npcl.getCurhp()-hurt<=0) {
+							tm2.put("KRH", npcl.getCurhp());
 							npcl.setCurhp(0);
 							tm2.put("KE", 0);
-						}else tm2.put("KE", npcl.getCurhp());
+						}else{
+							tm2.put("KRH", hurt);
+							npcl.setCurhp(npcl.getCurhp()-hurt);
+							tm2.put("KE", npcl.getCurhp());
+						}
 						tm2.put("KA", "N");
 						tm2.put("KB", npcl.getNpcid());
 						tm2.put("KC", npcl.getNpcloc());
@@ -1103,11 +1159,16 @@ public class MissionLogic implements Serializable{
 					if(CheckControl(npcl.getNpcprop(),uc.getCardprop())>0){//本位有克制，伤害增加0.05倍
 						hurt=(int)(hurt*1.05);
 					}
-					uc.setCurhp(uc.getCurhp()-hurt);
-					if(uc.getCurhp()<=0) {
+					
+					if(uc.getCurhp()-hurt<=0) {
+						tm1.put("KRH", uc.getCurhp());
 						uc.setCurhp(0);
 						tm1.put("KE", 0);
-					}else tm1.put("KE", uc.getCurhp());
+					}else{
+						tm1.put("KRH", hurt);
+						uc.setCurhp(uc.getCurhp()-hurt);
+						tm1.put("KE", uc.getCurhp());
+					} 
 					tm1.put("KA", "P");
 					tm1.put("KB", uc.getCardid());
 					tm1.put("KC", uc.getLocate());
@@ -1141,11 +1202,16 @@ public class MissionLogic implements Serializable{
 					if(CheckControl(ucb.getCardprop(),npcl.getNpcprop())>0){//本位有克制，伤害增加0.05倍
 						hurt=(int)(hurt*1.05);
 					}
-					npcl.setCurhp(npcl.getCurhp()-hurt);
-					if(npcl.getCurhp()<=0) {
+				
+					if(npcl.getCurhp()-hurt<=0) {
+						tm1.put("KRH", npcl.getCurhp());
 						npcl.setCurhp(0);
 						tm1.put("KE", 0);
-					}else tm1.put("KE", npcl.getCurhp());
+					}else{
+						tm1.put("KRH", hurt);
+						npcl.setCurhp(npcl.getCurhp()-hurt);
+						tm1.put("KE", npcl.getCurhp());
+					} 
 					tm1.put("KA", "N");
 					tm1.put("KB", npcl.getNpcid());
 					tm1.put("KC", npcl.getNpcloc());
@@ -1180,11 +1246,16 @@ public class MissionLogic implements Serializable{
 					if(CheckControl(npcl.getNpcprop(),uc.getCardprop())>0){//本位有克制，伤害增加0.05倍
 						hurt=(int)(hurt*1.05);
 					}
-					uc.setCurhp(uc.getCurhp()-hurt);
-					if(uc.getCurhp()<=0) {
+					
+					if(uc.getCurhp()-hurt<=0) {
+						tm1.put("KRH", uc.getCurhp());
 						uc.setCurhp(0);
 						tm1.put("KE", 0);
-					}else tm1.put("KE", uc.getCurhp());
+					}else {
+						tm1.put("KRH", hurt);
+						uc.setCurhp(uc.getCurhp()-hurt);
+						tm1.put("KE", uc.getCurhp());
+					}
 					tm1.put("KA", "P");
 					tm1.put("KB", uc.getCardid());
 					tm1.put("KC", uc.getLocate());
@@ -1218,11 +1289,16 @@ public class MissionLogic implements Serializable{
 					if(CheckControl(ucb.getCardprop(),npcl.getNpcprop())>0){//本位有克制，伤害增加0.05倍
 						hurt=(int)(hurt*1.05);
 					}
-					npcl.setCurhp(npcl.getCurhp()-hurt);
-					if(npcl.getCurhp()<=0) {
+					
+					if(npcl.getCurhp()-hurt<=0) {
+						tm1.put("KRH", npcl.getCurhp());
 						npcl.setCurhp(0);
 						tm1.put("KE", 0);
-					}else tm1.put("KE", npcl.getCurhp());
+					}else {
+						tm1.put("KRH", hurt);
+						npcl.setCurhp(npcl.getCurhp()-hurt);
+						tm1.put("KE", npcl.getCurhp());
+					}
 					tm1.put("KA", "N");
 					tm1.put("KB", npcl.getNpcid());
 					tm1.put("KC",npcl.getNpcloc());
